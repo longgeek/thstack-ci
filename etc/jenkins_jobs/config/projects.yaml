@@ -1,0 +1,41 @@
+- project:
+    name: sandbox
+    github-org: openstack-dev
+    node: master
+    vendor: THSTACK-CI
+
+    jobs:
+        - noop-check-communication
+#        - dsvm-tempest-full:
+#            node: master
+- project:
+    name: glance
+    github-org: openstack
+    node: master
+    vendor: THSTACK-CI
+
+    jobs:
+        - thstack-ci-glance-docs
+        - thstack-ci-glance-pep8
+        - thstack-ci-glance-python27
+        - thstack-ci-glance-python26
+
+- project:
+    name: nova
+    github-org: openstack
+    node: master
+    vendor: THSTACK-CI
+
+    jobs:
+        - thstack-ci-nova-docs
+        - thstack-ci-nova-pep8
+        - thstack-ci-nova-python27
+        - thstack-ci-nova-python26
+- project:
+    name: devstack
+    github-org: openstack-dev
+    node: master
+    vendor: THSTACK-CI
+
+    jobs:
+        - thstack-ci-devstack

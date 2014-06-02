@@ -1,0 +1,314 @@
+- job-template:
+    name: 'noop-check-communication'
+    node: '{node}'
+
+    builders:
+      - shell: |
+          #!/bin/bash -xe
+          echo "Hello world, this is the {vendor} Testing System"
+- job-template:
+    name: 'dsvm-tempest-full'
+    node: '{node}'
+
+    wrappers:
+      - timeout:
+          timeout: 185  # Timeout in *minutes*
+          fail: true  # A job run that exceeds the timeout will cause a failure
+      - timestamps
+
+    builders:
+      - devstack-checkout  # In macros.yaml from os-ext-testing
+      - shell: |
+          #!/bin/bash -xe
+          if [ -z $ZUUL_PROJECT ]; then
+              export ZUUL_PROJECT=openstack-dev/sandbox
+          fi
+          if [ -z $ZUUL_BRANCH ]; then
+              export ZUUL_BRANCH=master
+          fi
+          export PYTHONUNBUFFERED=true
+          export DEVSTACK_GATE_TIMEOUT=180
+          export DEVSTACK_GATE_TEMPEST=1
+          export RE_EXEC=true
+          cp devstack-gate/devstack-vm-gate-wrap.sh ./safe-devstack-vm-gate-wrap.sh
+          ./safe-devstack-vm-gate-wrap.sh
+      - link-logs  # In macros.yaml from os-ext-testing
+#
+#    publishers:
+#      - devstack-logs  # In macros.yaml from os-ext-testing
+#      - console-log  # In macros.yaml from os-ext-testing
+
+## DevStack ##################################################################
+## DevStack ##################################################################
+- job-template:
+    name: 'thstack-ci-devstack'
+    node: '{node}'
+
+    wrappers:
+      - timeout:
+          timeout: 185  # Timeout in *minutes*
+          fail: true  # A job run that exceeds the timeout will cause a failure
+      - timestamps
+
+    builders:
+      - shell: |
+          #!/bin/bash -xe
+          if [ -f /etc/sudoers.d/jenkins-sudo ] ; then
+              sudo rm /etc/sudoers.d/jenkins-sudo
+          fi
+      - shell: |
+          /usr/local/jenkins/slave_scripts/gerrit-git-prep.sh https://review.openstack.org git://git.openstack.org
+
+      - shell: |
+          /usr/local/jenkins/slave_scripts/run-bash8.sh openstack devstack
+
+## Glance ##################################################################
+## Glance ##################################################################
+- job-template:
+    name: 'thstack-ci-glance-docs'
+    node: '{node}'
+
+    wrappers:
+      - timeout:
+          timeout: 185  # Timeout in *minutes*
+          fail: true  # A job run that exceeds the timeout will cause a failure
+      - timestamps
+
+    builders:
+      - shell: |
+          #!/bin/bash -xe
+          if [ -f /etc/sudoers.d/jenkins-sudo ] ; then
+              sudo rm /etc/sudoers.d/jenkins-sudo
+          fi
+      - shell: |
+          /usr/local/jenkins/slave_scripts/gerrit-git-prep.sh https://review.openstack.org git://git.openstack.org
+
+      - shell: |
+          [ -d .tox ] || mkdir .tox
+          cp -rp /opt/git/openstack/glance/venv .tox/
+          /usr/local/jenkins/slave_scripts/run-docs.sh openstack glance
+
+- job-template:
+    name: 'thstack-ci-glance-pep8'
+    node: '{node}'
+
+    wrappers:
+      - timeout:
+          timeout: 185  # Timeout in *minutes*
+          fail: true  # A job run that exceeds the timeout will cause a failure
+      - timestamps
+
+    builders:
+      - shell: |
+          #!/bin/bash -xe
+          if [ -f /etc/sudoers.d/jenkins-sudo ] ; then
+              sudo rm /etc/sudoers.d/jenkins-sudo
+          fi
+      - shell: |
+          /usr/local/jenkins/slave_scripts/gerrit-git-prep.sh https://review.openstack.org git://git.openstack.org
+
+      - shell: |
+          [ -d .tox ] || mkdir .tox
+          cp -rp /opt/git/openstack/glance/pep8 .tox/
+          /usr/local/jenkins/slave_scripts/run-pep8.sh openstack glance
+
+- job-template:
+    name: 'thstack-ci-glance-python26'
+    node: '{node}'
+
+    wrappers:
+      - timeout:
+          timeout: 185  # Timeout in *minutes*
+          fail: true  # A job run that exceeds the timeout will cause a failure
+      - timestamps
+
+    builders:
+      - shell: |
+          #!/bin/bash -xe
+          if [ -f /etc/sudoers.d/jenkins-sudo ] ; then
+              sudo rm /etc/sudoers.d/jenkins-sudo
+          fi
+      - shell: |
+          /usr/local/jenkins/slave_scripts/gerrit-git-prep.sh https://review.openstack.org git://git.openstack.org
+
+      - shell: |
+          [ -d .tox ] || mkdir .tox
+          cp -rp /opt/git/openstack/glance/py26 .tox/
+          /usr/local/jenkins/slave_scripts/run-unittests.sh 26 openstack glance
+
+      - shell: |
+          #!/bin/bash
+          OUT=`git ls-files --other --exclude-standard --directory`
+          if [ -z "$OUT" ]; then
+              echo "No extra files created during test."
+              exit 0
+          else
+              echo "The following un-ignored files were created during the test:"
+              echo "$OUT"
+              exit 0  # TODO: change to 1 to fail tests.
+          fi 
+
+- job-template:
+    name: 'thstack-ci-glance-python27'
+    node: '{node}'
+
+    wrappers:
+      - timeout:
+          timeout: 185  # Timeout in *minutes*
+          fail: true  # A job run that exceeds the timeout will cause a failure
+      - timestamps
+
+    builders:
+      - shell: |
+          #!/bin/bash -xe
+          if [ -f /etc/sudoers.d/jenkins-sudo ] ; then
+              sudo rm /etc/sudoers.d/jenkins-sudo
+          fi
+      - shell: |
+          /usr/local/jenkins/slave_scripts/gerrit-git-prep.sh https://review.openstack.org git://git.openstack.org
+
+      - shell: |
+          [ -d .tox ] || mkdir .tox
+          cp -rp /opt/git/openstack/glance/py27 .tox/
+          /usr/local/jenkins/slave_scripts/run-unittests.sh 27 openstack glance
+
+      - shell: |
+          #!/bin/bash
+          OUT=`git ls-files --other --exclude-standard --directory`
+          if [ -z "$OUT" ]; then
+              echo "No extra files created during test."
+              exit 0
+          else
+              echo "The following un-ignored files were created during the test:"
+              echo "$OUT"
+              exit 0  # TODO: change to 1 to fail tests.
+          fi 
+
+##################################################################
+##################################################################
+
+## Ceilometer ##################################################################
+## Ceilometer ##################################################################
+
+- job-template:
+    name: 'thstack-ci-nova-docs'
+    node: '{node}'
+
+    wrappers:
+      - timeout:
+          timeout: 185  # Timeout in *minutes*
+          fail: true  # A job run that exceeds the timeout will cause a failure
+      - timestamps
+
+    builders:
+      - shell: |
+          #!/bin/bash -xe
+          if [ -f /etc/sudoers.d/jenkins-sudo ] ; then
+              sudo rm /etc/sudoers.d/jenkins-sudo
+          fi
+      - shell: |
+          /usr/local/jenkins/slave_scripts/gerrit-git-prep.sh https://review.openstack.org git://git.openstack.org
+
+      - shell: |
+          [ -d .tox ] || mkdir .tox
+          cp -rp /opt/git/openstack/nova/venv .tox/
+          /usr/local/jenkins/slave_scripts/run-docs.sh openstack nova
+
+- job-template:
+    name: 'thstack-ci-nova-pep8'
+    node: '{node}'
+
+    wrappers:
+      - timeout:
+          timeout: 185  # Timeout in *minutes*
+          fail: true  # A job run that exceeds the timeout will cause a failure
+      - timestamps
+
+    builders:
+      - shell: |
+          #!/bin/bash -xe
+          if [ -f /etc/sudoers.d/jenkins-sudo ] ; then
+              sudo rm /etc/sudoers.d/jenkins-sudo
+          fi
+      - shell: |
+          /usr/local/jenkins/slave_scripts/gerrit-git-prep.sh https://review.openstack.org git://git.openstack.org
+
+      - shell: |
+          [ -d .tox ] || mkdir .tox
+          cp -rp /opt/git/openstack/nova/pep8 .tox/
+          /usr/local/jenkins/slave_scripts/run-pep8.sh openstack nova
+
+- job-template:
+    name: 'thstack-ci-nova-python26'
+    node: '{node}'
+
+    wrappers:
+      - timeout:
+          timeout: 185  # Timeout in *minutes*
+          fail: true  # A job run that exceeds the timeout will cause a failure
+      - timestamps
+
+    builders:
+      - shell: |
+          #!/bin/bash -xe
+          if [ -f /etc/sudoers.d/jenkins-sudo ] ; then
+              sudo rm /etc/sudoers.d/jenkins-sudo
+          fi
+      - shell: |
+          /usr/local/jenkins/slave_scripts/gerrit-git-prep.sh https://review.openstack.org git://git.openstack.org
+
+      - shell: |
+          [ -d .tox ] || mkdir .tox
+          cp -rp /opt/git/openstack/nova/py26 .tox/
+          /usr/local/jenkins/slave_scripts/run-unittests.sh 26 openstack nova
+
+      - shell: |
+          #!/bin/bash
+          OUT=`git ls-files --other --exclude-standard --directory`
+          if [ -z "$OUT" ]; then
+              echo "No extra files created during test."
+              exit 0
+          else
+              echo "The following un-ignored files were created during the test:"
+              echo "$OUT"
+              exit 0  # TODO: change to 1 to fail tests.
+          fi 
+
+- job-template:
+    name: 'thstack-ci-nova-python27'
+    node: '{node}'
+
+    wrappers:
+      - timeout:
+          timeout: 185  # Timeout in *minutes*
+          fail: true  # A job run that exceeds the timeout will cause a failure
+      - timestamps
+
+    builders:
+      - shell: |
+          #!/bin/bash -xe
+          if [ -f /etc/sudoers.d/jenkins-sudo ] ; then
+              sudo rm /etc/sudoers.d/jenkins-sudo
+          fi
+      - shell: |
+          /usr/local/jenkins/slave_scripts/gerrit-git-prep.sh https://review.openstack.org git://git.openstack.org
+
+      - shell: |
+          [ -d .tox ] || mkdir .tox
+          cp -rp /opt/git/openstack/nova/py27 .tox/
+          /usr/local/jenkins/slave_scripts/run-unittests.sh 27 openstack nova
+
+      - shell: |
+          #!/bin/bash
+          OUT=`git ls-files --other --exclude-standard --directory`
+          if [ -z "$OUT" ]; then
+              echo "No extra files created during test."
+              exit 0
+          else
+              echo "The following un-ignored files were created during the test:"
+              echo "$OUT"
+              exit 0  # TODO: change to 1 to fail tests.
+          fi 
+
+##################################################################
+##################################################################
